@@ -84,11 +84,11 @@ class Server:
 			self.mangleNum += 1
 
 			mangleName = newPlayer.name.strip() #+ mangleNumStr
-
-			if len(mangleName) > 6:
-                            mangleName = mangleName[0:6]
-                            
-			mangleName += mangleNumStr
+			if len(mangleName) <= 6:
+				mangleName += mangleNumStr
+			else:
+				mangleName = mangleName[0:5]
+				mangleName += mangleNumStr
 			
 			while len(mangleName) < 8:
 				mangleName += ' '

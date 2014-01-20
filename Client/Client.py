@@ -349,7 +349,7 @@ class Client:
 #                 self.interpMsg(self.msgQueue.pop(0))
 
             #Draw everything
-            self.gui.draw()
+            #self.gui.draw()
             
             
             read_socks, write_socks, error_socks = select.select(self.socks, [], [])
