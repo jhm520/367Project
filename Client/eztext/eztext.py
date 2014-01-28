@@ -47,22 +47,22 @@ class Input:
 
     def update(self, events):
         """Hold Backspace Thingy"""
-        pressed = pygame.key.get_pressed()
-        if self.pause == 3 and pressed[K_BACKSPACE]:
-            self.pause = 0
-            self.value = self.value[:-1]
-        elif pressed[K_BACKSPACE]:
-            self.pause += 1
-        else:
-            self.pause = 0
+##        pressed = pygame.key.get_pressed()
+##        if self.pause == 3 and pressed[K_BACKSPACE]:
+##            self.pause = 0
+##            self.value = self.value[:-1]
+##        elif pressed[K_BACKSPACE]:
+##            self.pause += 1
+##        else:
+##            self.pause = 0
         """ Update the input based on passed events """
         for event in events:
             
             if event.type == KEYUP:
                 if event.key == K_LSHIFT or event.key == K_RSHIFT: self.shifted = False
             if event.type == KEYDOWN:
-                #if event.key == K_BACKSPACE: self.value = self.value[:-1]
-                if event.key == K_LSHIFT or event.key == K_RSHIFT: self.shifted = True
+                if event.key == K_BACKSPACE: self.value = self.value[:-1]
+                elif event.key == K_LSHIFT or event.key == K_RSHIFT: self.shifted = True
                 elif event.key == K_SPACE: self.value += ' '
                 elif event.key == K_RETURN:
                     val = self.value
