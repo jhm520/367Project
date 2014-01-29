@@ -127,7 +127,7 @@ class Server:
                 self.lobbyTimeoutTime = 0
                 
             if len(self.lobby) >= 7:
-                            self.startGame()
+                    self.startGame()
             
             
             
@@ -174,8 +174,8 @@ class Server:
         
         def run(self):
             self.lobbyTimeoutTime = 0
-            #self.timerThread = threading.Thread(target=self.theTimer)
-            #self.timerThread.start()
+            self.timerThread = threading.Thread(target=self.theTimer)
+            self.timerThread.start()
             self.open_socket()
             running = 1
             print "Server is running..."

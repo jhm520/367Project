@@ -11,46 +11,6 @@ import os
 import pygame
 from pygame.locals import *
 
-class Gui:
-
-    def __init__(self, client=None):
-        pygame.init()
-
-        #the GUI should reference the client, but never modify it
-        self.client = client
-        self.bg = pygame.image.load(os.path.join('data', 'map.png'))
-
-        self.screen = pygame.display.set_mode((640, 480))
-        pygame.display.set_caption("Warlords")
-        pygame.mouse.set_visible(1)
-
-        #make icon invisible
-        icon = pygame.Surface((1,1));
-        icon.set_alpha(0);
-        pygame.display.set_icon(icon)
-         
-        self.clock = pygame.time.Clock()
-
-    def draw(self):
-
-        self.screen.blit(self.bg, (0,0))
-        pygame.display.update()
-        
-
-##    def run(self):
-##
-##        running = True
-##        while running:
-##            keystate = pygame.key.get_pressed()
-##            for event in pygame.event.get():
-##                if event.type == QUIT or keystate[K_ESCAPE]:
-##                    pygame.quit()
-##                    running = False
-##                    sys.exit()
-##            self.draw()
-##            self.clock.tick(100)
-
-
 class Client:
     def __init__(self, host, port, name, manual):
         self.host = host
@@ -67,6 +27,11 @@ class Client:
         self.player = None
         self.hand = []
         self.manual = manual
+        self.chatLog = []
+        if manual:
+            self.mode = "manual"
+        else:
+            self.mode = "auto"
         self.socks = []
         self.strikes = 0
         self.msgQueue = []
@@ -75,23 +40,20 @@ class Client:
         self.active = False
         self.swapping = False
 
-        #initialize GUI
-        self.gui = Gui(self)
-
         
     def connect(self):
                 try:
                         self.sock = socket(AF_INET, SOCK_STREAM)
                         self.sock.connect((self.host,self.port))
                         self.sock.settimeout(15)
-                        self.isConected = True
+                        self.isConnected = True
                         print ("Connected to ", self.sock.getpeername())
                 except error, (value,message):
                 #except error:
                         if self.sock:
                                 self.sock.close()
                         print ("Could not open socket: ", message)
-                        sys.exit(1)
+                        sys.exit()
 
     def makeCplay(self):
 
@@ -300,7 +262,9 @@ class Client:
                 print "Sent:", cswap
         
         elif msgHeader == 'schat':
-            pass
+            if len(self.chatLog) >= 5:
+                self.chatLog.pop(0)
+            self.chatLog.append(msgBody)
             
         elif msgHeader == 'swaps':
             swapCards = msgBody.split('|')  
@@ -337,19 +301,16 @@ class Client:
         cjoin = '[cjoin|' + self.name + ']'
         self.connect()
         time.sleep(.1)
-        self.sock.sendall(cjoin)
+        self.sock.send(cjoin)
         #self.socks = [self.sock, sys.stdin]
         self.socks = [self.sock]
 
-        
         
         
         while 1:
 #             if self.msgQueue:
 #                 self.interpMsg(self.msgQueue.pop(0))
 
-            #Draw everything
-            #self.gui.draw()
             
             
             read_socks, write_socks, error_socks = select.select(self.socks, [], [])

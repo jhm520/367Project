@@ -3,11 +3,14 @@ from pygame.locals import *
 import os
 import sys
 import argparse
+import eztext
 from Client import *
 
 class Gui:
 
     def __init__(self, host, port, name, manual):
+        self.client = Client(host, port, name, manual)
+            
         pygame.init()
 
         #the GUI should reference the client, but never modify it
@@ -21,19 +24,29 @@ class Gui:
         icon = pygame.Surface((1,1))
         icon.set_alpha(0)
         pygame.display.set_icon(icon)
-         
+        
         self.clock = pygame.time.Clock()
-        self.client = Client(host, port, name, manual)
+        
+        
 
         self.font = pygame.font.SysFont(None,16)
         self.font2 = pygame.font.SysFont(None,64)
         self.font3 = pygame.font.SysFont(None,32)
+
+        self.textBox = eztext.Input(x=5, y = 325, font=self.font, maxlength=63, color=(0,0,0), prompt='Chat: ')
 
     def draw(self):
         #draw background
         self.screen.blit(self.bg, (0,0))
 
 
+        #draw connection info
+        if self.client.isConnected:
+            connectText = self.font.render("Connected to {0} on port {1} as {2} in {3} mode.".format(str(self.client.host), str(self.client.port),self.client.name, self.client.mode), True, (0,0,0))
+        else:
+            connectText = self.font.render("Not connected.", True, (0,0,0))
+
+        self.screen.blit(connectText,(5,10))
         
         #draw lobby
         lobbyText = self.font.render("Lobby (" + str(len(self.client.lobby)) + ")", True, (0,0,0))
@@ -45,7 +58,18 @@ class Gui:
                 playerText = self.font.render(player, True, (0,0,0))
                 self.screen.blit(playerText, (500,ypos))
                 ypos += 20
-        
+
+
+        #draw textBox
+        self.textBox.draw(self.screen)
+
+        #draw chat
+        if self.client.chatLog:
+            ypos = 350
+            for chat in self.client.chatLog:
+                chatText = self.font.render("> " + chat, True, (0,0,0))
+                self.screen.blit(chatText, (5, ypos))
+                ypos += 20
                 
         pygame.display.update()
 
@@ -57,14 +81,28 @@ class Gui:
         
         while running:
             keystate = pygame.key.get_pressed()
-            for event in pygame.event.get():
+            events = pygame.event.get()
+            for event in events:
                 if event.type == QUIT or keystate[K_ESCAPE]:
                     running = False
             self.draw()
             self.clock.tick(100)
+
+            #get text input
+            text = None
+            text = self.textBox.update(events)
+
+            #if text is input
+            if text:
+                print text
+                if self.client.isConnected:
+                    cchat = self.client.makeCchat(text)
+                    self.client.sock.send(cchat)
+                
         pygame.quit()
         self.clientThread.join()
         sys.exit()
+        
 
 if __name__ == '__main__':
 
