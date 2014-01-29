@@ -171,7 +171,7 @@ class Game:
                 self.activePlayerCnt = 0
             else:
                 self.activePlayerCnt += 1
-                
+
             if self.table[self.activePlayerCnt].hand:
                 self.activePlayer = self.table[self.activePlayerCnt]
                 self.activePlayer.isActive = True

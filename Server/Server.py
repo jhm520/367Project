@@ -71,7 +71,7 @@ class Server:
                 if kplayer is not self.server:
                     if kplayer.name == player.name:
                         self.socks.remove(kplayer)
-            print "Player kicked from server."
+            print "{0} kicked from server.".format(player.name)
             
             
         def mangleName(self, newPlayer):
@@ -104,6 +104,11 @@ class Server:
                 if newPlayer.name == player.name:
                     self.mangleName(newPlayer)
                     break
+            if self.game:
+                for player in self.game.table:
+                    if newPlayer.name == player.name:
+                        self.mangleName(newPlayer)
+                        break
 
             
             # make sjoin string msg based on attributes of player
@@ -220,8 +225,18 @@ class Server:
                         else:  # new message
                                 try:
                                         msg = player.sock.recv(self.bufsize)
-                                        print 'Recv: ' + msg + ' from ' + player.name
-                                        self.interpMsg(player, msg)
+                                        msgs = msg.split('][')
+                                        for msg in msgs:
+                                            if msg == '':
+                                                self.kick(player)
+                                                break
+                                            else:
+                                                if msg[0] != '[':
+                                                    msg = '['+msg
+                                                if msg[-1] != ']':
+                                                    msg += ']'
+                                            print 'Recv: ' + msg + ' from ' + player.name
+                                            self.interpMsg(player, msg)
                                 except socket.error, message:
                                         print "Socket error: ", message
                                         self.kick(player)
