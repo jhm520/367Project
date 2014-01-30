@@ -7,8 +7,9 @@ import time
 
 class Game:
     def __init__(self, server):
-        self.table = []
-        self.activePlayer = None
+        self.table = [] #list of players
+        self.gameTable = [] #list of players who still have cards
+        
         self.warlord = None
         self.scumbag = None
         self.firstRound = 1
@@ -18,7 +19,8 @@ class Game:
         self.timeout = None
         self.scard = None
         self.wcard = None
-        self.activePlayerCnt = 0
+        self.activePlayer = None #the active player "self.table[activePlayerCnt]"
+        self.activePlayerCnt = 0 #index of player whos turn it is
 
     
     
@@ -71,14 +73,19 @@ class Game:
 
     
     def setup(self):
+        self.gameTable = []
+        
         while len(self.table) < 7 and len(self.server.lobby) > 0:
             thePlayer = self.server.lobby.pop(0)
             thePlayer.atTable = True
             self.table.append(thePlayer)
             
         self.dealCards()
+
+
+        for player in self.table:
+            self.gameTable.append(player)
         
-        #if starting round, shuffle the players, might as well
         if self.firstRound:
             threeClubs = '00'
             for player in self.table:
@@ -201,6 +208,7 @@ class Game:
             player.rank = self.socialRank
             print player.name + " rank " + str(player.rank)
             self.socialRank += 1
+            self.gameTable.remove(player)
         
         #player was first to play all his cards, is warlord
             if player.rank == 1:
@@ -209,15 +217,23 @@ class Game:
                 print self.warlord.name + " is warlord"
 
 
-        #if all cards are on the table, this player is the scumbag, game is over, reset the table
-            if len(self.playedDeck) == 52:
-                self.scumbag = player
+        
+
+
+
+        #if there is one player left in the game, this last player is the scumbag, game is over, reset the table
+            if len(self.gameTable) == 1:
+                self.scumbag = self.gameTable[0]
+                
                 self.scumbag.isScumbag = True
                 self.scumbag.status = 'w'
                 self.scumbag.isActive = False
+                self.gameTable.remove(self.scumbag)
+                #self.playedDeck.extend(thePlayCards)
+                self.scumbag.hand = []
                 print self.scumbag.name + " is scumbag"
-                self.table.remove(player)
-                self.table.append(player)
+                self.table.remove(self.scumbag)
+                self.table.append(self.scumbag)
                 #reset table
                 for kplayer in self.table:
                     kplayer.isActive = False
@@ -227,9 +243,30 @@ class Game:
                 self.lastPlayer = None
                 self.setup()
                 
-                
         if self.scumbag is None:
             self.nextPlayer()
+
+    def setScumbag(self):
+        self.scumbag = self.gameTable[0]
+        self.scumbag.isScumbag = True
+        self.scumbag.status = 'w'
+        self.scumbag.isActive = False
+        self.gameTable.remove(self.scumbag)
+        #self.playedDeck.extend(thePlayCards)
+        self.scumbag.hand = []
+        print self.scumbag.name + " is scumbag"
+        self.table.remove(self.scumbag)
+        self.table.append(self.scumbag)
+        #reset table
+        for kplayer in self.table:
+            kplayer.isActive = False
+            kplayer.status = "w"
+        #self.activePlayer = None
+        self.firstRound = 0
+        self.lastPlayer = None
+        self.setup()
+        
+        
     
     def play(self, player, thePlay):
         

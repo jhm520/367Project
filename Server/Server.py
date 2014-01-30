@@ -51,14 +51,20 @@ class Server:
             if player.atTable:
                 player.status = 'd'
                 player.numCards = '00'
-                player.hand = []
-                stabl = self.msgMaker.makeStabl()
-                self.sendToAll(stabl)
                 if self.game:
-                    for kplayer in self.game.table:
-                        if kplayer.name == player.name:
-                            self.game.table.remove(kplayer)
-                        self.game.playedDeck.extend(player.hand)
+                    if player is self.game.activePlayer:
+                        self.game.nextPlayer()
+
+                    self.game.playedDeck.extend(player.hand)
+                    player.hand = []
+                    stabl = self.msgMaker.makeStabl()
+                    self.sendToAll(stabl)
+                    self.game.table.remove(player)
+                    self.game.gameTable.remove(player)
+                        
+                        
+                    
+                    
                 #self.game.table.remove(player)
             
             if player in self.lobby:
@@ -151,11 +157,10 @@ class Server:
                         sys.exit(1)
         
         def theTimer(self):
-            while 1:
+            while self.running:
                 try:
-                    if not self.running:
-                        break
                     
+                        
                     if self.lobbyTimeoutTime != 0:
                         currentTime = time.time()
                         timeElapsed = currentTime - self.lobbyTimeoutTime
@@ -164,6 +169,13 @@ class Server:
                             self.lobbyTimeoutTime = 0
 
                     if self.game:
+                        if len(self.game.table) < 3:
+                            self.game.close()
+                            self.game = None
+                            print "Game Closed"
+                            slobb = self.msgMaker.makeSlobb()
+                            self.sendToAll(slobb)
+                            
                         if self.playTime != 0:
                             currentTime = time.time()
                             timeElapsed = currentTime - self.playTime
@@ -194,13 +206,6 @@ class Server:
             self.socks = [self.server, sys.stdin]
 
             while self.running:
-                if self.game:
-                    if len(self.game.table) < 3:
-                        self.game.close()
-                        self.game = None
-                        print "Game Closed"
-                        slobb = self.msgMaker.makeSlobb()
-                        self.sendToAll(slobb)
 
                 read_players, write_players, error_socks = select.select(self.socks, [], [])
                 
