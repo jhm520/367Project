@@ -42,7 +42,7 @@ class Gui:
 	self.screen.fill((0,200,0))
 	pygame.draw.line(self.screen, (0,0,0), (0, 320), (640, 320), 2)
 	pygame.draw.line(self.screen, (0,0,0), (480, 0), (480, 320), 2)
-	pygame.draw.line(self.screen, (0,0,0), (200, 320), (200, 480), 2)
+	pygame.draw.line(self.screen, (0,0,0), (200, 320), (120, 480), 2)
 
 
         #draw connection info
