@@ -152,41 +152,48 @@ class Server:
         
         def theTimer(self):
             while 1:
-                if self.lobbyTimeoutTime != 0:
-                    currentTime = time.time()
-                    timeElapsed = currentTime - self.lobbyTimeoutTime
-                    if timeElapsed > self.lobbyTimeout and len(self.lobby) >= 3:
-                        self.startGame()
-                        self.lobbyTimeoutTime = 0
+                try:
+                    if not self.running:
+                        break
+                    
+                    if self.lobbyTimeoutTime != 0:
+                        currentTime = time.time()
+                        timeElapsed = currentTime - self.lobbyTimeoutTime
+                        if timeElapsed > self.lobbyTimeout and len(self.lobby) >= 3:
+                            self.startGame()
+                            self.lobbyTimeoutTime = 0
 
-                if self.game:
-                    if self.playTime != 0:
-                        currentTime = time.time()
-                        timeElapsed = currentTime - self.playTime
-                        if timeElapsed > self.playTimeout and timeElapsed < 100:
-                            self.playTime = 0
-                            self.game.playerTimeout(self.game.activePlayer)
-                            
-                    if self.warlordTime != 0:
-                        currentTime = time.time()
-                        timeElapsed = currentTime - self.warlordTime
-                        if timeElapsed > self.playTimeout and timeElapsed < 100:
-                            self.playTime = 0
-                            self.game.warlordTimeout()
+                    if self.game:
+                        if self.playTime != 0:
+                            currentTime = time.time()
+                            timeElapsed = currentTime - self.playTime
+                            if timeElapsed > self.playTimeout and timeElapsed < 100:
+                                self.playTime = 0
+                                self.game.playerTimeout(self.game.activePlayer)
+                                
+                        if self.warlordTime != 0:
+                            currentTime = time.time()
+                            timeElapsed = currentTime - self.warlordTime
+                            if timeElapsed > self.playTimeout and timeElapsed < 100:
+                                self.playTime = 0
+                                self.game.warlordTimeout()
+                except:
+                    break
                         
         
         
         
         def run(self):
+            
+            self.open_socket()
+            self.running = 1
             self.lobbyTimeoutTime = 0
             self.timerThread = threading.Thread(target=self.theTimer)
             self.timerThread.start()
-            self.open_socket()
-            running = 1
             print "Server is running..."
-            self.socks = [self.server]
+            self.socks = [self.server, sys.stdin]
 
-            while running:
+            while self.running:
                 if self.game:
                     if len(self.game.table) < 3:
                         self.game.close()
@@ -209,24 +216,18 @@ class Server:
                                         self.strike(new_player, '81')
                                         self.kick(new_player)
                                         
-                        elif player == sys.stdin:  # this will work on linux, not windows
-                                read = sys.stdin.readline()
-                                self.server.close()
-                                break
-                                if read == 'exit':
-                                        running = 0
-                                        self.server.close()
-                                        print "Server closed."
-                                        break
-                                else:
-                                        self.sendToAll(read)
-        
-                                break
+                        elif player is sys.stdin:  # this will work on linux, not windows
+                                junk = sys.stdin.readline()
+                                if junk:
+                                    self.running = 0
+                                    self.server.close()
+                                    break
                         else:  # new message
                                 try:
                                         msg = player.sock.recv(self.bufsize)
                                         msgs = msg.split('][')
                                         for msg in msgs:
+                                            print "msg" + msg
                                             if msg == '':
                                                 self.kick(player)
                                                 break
@@ -240,7 +241,6 @@ class Server:
                                 except socket.error, message:
                                         print "Socket error: ", message
                                         self.kick(player)
-                
                 
 
 
@@ -317,7 +317,7 @@ class Server:
         # send msg to all clients
         def sendToAll(self, msg):
             for player in self.socks:
-                if player is not self.server:
+                if player is not self.server and player is not sys.stdin:
                     try:
                         player.sock.send(msg)
                     except socket.error, message:
