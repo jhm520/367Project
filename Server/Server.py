@@ -232,7 +232,6 @@ class Server:
                                         msg = player.sock.recv(self.bufsize)
                                         msgs = msg.split('][')
                                         for msg in msgs:
-                                            print "msg" + msg
                                             if msg == '':
                                                 self.kick(player)
                                                 break
@@ -293,7 +292,7 @@ class Server:
                         if player not in self.game.table:
                             self.strike(player, '31')
                         else:
-                            self.strike(player, '13')
+                            self.strike(player, '15')
                             
                         
                 elif cswapMatch and player.warlordSwap:

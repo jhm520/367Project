@@ -337,7 +337,7 @@ class Game:
             if len(thePlayCards) >= len(lastPlayCards):
                 if theRank >= lastRank:
                     self.playCards(player, thePlay, thePlayCards)
-                    if theRank == lastRank:
+                    if theRank == lastRank and len(thePlayCards) == len(lastPlayCards):
                         print "Player ", self.activePlayer.name, "skipped."
                         skippedPlayer = self.activePlayer
                         self.nextPlayer()
