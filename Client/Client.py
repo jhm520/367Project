@@ -123,20 +123,18 @@ class Client:
 
             return cplay
         
-        else:
-            self.active = True
-            print "It is your turn"
-            handStr = ""
-            for card in self.hand:
-                handStr += card + ','
-            print "Your hand:", handStr
-            lastPlayStr = ""
-            for card in self.lastPlay:
-                lastPlayStr += card + ","
-            print "LastPlay", lastPlayStr
-            print "Input card numbers ex. '52,52,52,52': "
-            #cplay = "[cplay|"+cplaycards+"]"
-            #return cplay
+##            print "It is your turn"
+##            handStr = ""
+##            for card in self.hand:
+##                handStr += card + ','
+##            print "Your hand:", handStr
+##            lastPlayStr = ""
+##            for card in self.lastPlay:
+##                lastPlayStr += card + ","
+##            print "LastPlay", lastPlayStr
+##            print "Input card numbers ex. '52,52,52,52': "
+##            #cplay = "[cplay|"+cplaycards+"]"
+##            #return cplay
         
         
     
@@ -188,10 +186,13 @@ class Client:
             
         if self.player:
             if self.player.status == 'a':
-                cplay = self.makeCplay()
-                time.sleep(.1)
-                self.sock.send(cplay)
-                print "Sent:", cplay
+                if self.manual:
+                    self.active = True
+                else:
+                    cplay = self.makeCplay()
+                    time.sleep(.1)
+                    self.sock.send(cplay)
+                    print "Sent:", cplay
                 
                 
     def updateHand(self, msg):
@@ -204,20 +205,13 @@ class Client:
         
         for card in cardStrs:
             self.hand.append(card)
+
+        self.hand.sort()
         
         
             
     def makeCswap(self):
-        if self.manual:
-            handStr = ""
-            for card in self.hand:
-                handStr += card + ','
-            print "Your hand:", handStr
-            print "Input Warlord swap card number: "
-            self.swapping = True
-            
-        else:
-            wcard = self.hand.pop(0)
+        wcard = self.hand.pop(0)
         
         cswap = '[cswap|' + wcard + ']'
         
@@ -261,6 +255,8 @@ class Client:
                 time.sleep(.1)
                 self.sock.send(cswap)
                 print "Sent:", cswap
+            else:
+                self.swapping = True
         
         elif msgHeader == 'schat':
             if len(self.chatLog) >= 5:
@@ -334,31 +330,30 @@ class Client:
                                     msg += ']'
                                 print "Recv:", msg
                                 self.interpMsg(msg)
-                    elif sock is sys.stdin:
-                        if self.manual:
-                            if self.active:
-                                cplaycards = sys.stdin.readline()
-                                cplay = "[cplay|"+cplaycards+"]"
-                                self.sock.send(cplay)
-                                self.active = False
-                            elif self.swapping:
-                                swapcard = sys.stdin.readline()
-                                self.hand.remove(swapcard)
-                                cswap = "[cswap|" + swapcard + "]"
-                                self.sock.send(cswap)
-                                self.swapping = False
-                            else:
-                                msg = sys.stdin.readline()
-                                if msg == "exit\n":
-                                    self.sock.close()
-                                    sys.exit()
-                                else:
-                                    
-                                    cchat = self.makeCchat(msg)
-                                    self.sock.send(cchat)
-                        else:
-                            self.sock.close()
-                            sys.exit()
+##                        if self.manual:
+##                            if self.active:
+##                                cplaycards = sys.stdin.readline()
+##                                cplay = "[cplay|"+cplaycards+"]"
+##                                self.sock.send(cplay)
+##                                self.active = False
+##                            elif self.swapping:
+##                                swapcard = sys.stdin.readline()
+##                                self.hand.remove(swapcard)
+##                                cswap = "[cswap|" + swapcard + "]"
+##                                self.sock.send(cswap)
+##                                self.swapping = False
+##                            else:
+##                                msg = sys.stdin.readline()
+##                                if msg == "exit\n":
+##                                    self.sock.close()
+##                                    sys.exit()
+##                                else:
+##                                    
+##                                    cchat = self.makeCchat(msg)
+##                                    self.sock.send(cchat)
+##                        else:
+##                            self.sock.close()
+##                            sys.exit()
                             
                 
                 if self.strikes >= 3:

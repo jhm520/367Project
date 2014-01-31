@@ -34,8 +34,9 @@ class Gui:
         self.font2 = pygame.font.SysFont(None,64)
         self.font3 = pygame.font.SysFont(None,32)
 
-        self.chatTextBox = eztext.Input(x=5, y=325, font=self.font, maxlength=63, color=(0,0,0), prompt='Chat: ')
+        self.chatTextBox = eztext.Input(x=5, y=460, font=self.font, maxlength=63, color=(0,0,0), prompt='Chat: ')
         self.playTextBox = eztext.Input(x=210, y=400, font=self.font, maxlength=20, color=(255,0,0), prompt='Input Play:')
+        self.swapTextBox = eztext.Input(x=210, y=420, font=self.font, maxlength=2, color=(255,0,0), prompt='Input Card to Swap:')
 
     def draw(self):
         #draw background
@@ -48,7 +49,7 @@ class Gui:
 
         #draw connection info
         if self.client.isConnected:
-            connectText = self.font.render("Connected to {0} on port {1} as {2} in {3} mode.".format(str(self.client.host), str(self.client.port),self.client.name, self.client.mode), True, (0,0,0))
+            connectText = self.font.render("Connected to {0} on port {1} as {2} in {3} mode.".format(str(self.client.host), str(self.client.port),self.client.name.strip(), self.client.mode), True, (0,0,0))
             #draw lobby
             lobbyText = self.font.render("Lobby (" + str(len(self.client.lobby)) + ")", True, (0,0,0))
             self.screen.blit(lobbyText,(490,10))
@@ -122,16 +123,25 @@ class Gui:
         
         self.screen.blit(connectText,(5,5))
 
-
-        self.playTextBox.draw(self.screen)
+        if self.client.manual:
+            if self.client.active:
+                self.playTextBox.draw(self.screen)
         #draw chatTextBox
-        self.chatTextBox.draw(self.screen)
+            elif self.client.swapping:
+                #draw swap box
+                self.swapTextBox.draw(self.screen)
+            else:
+                self.chatTextBox.draw(self.screen)
+            
+        
 
         #draw chat
         if self.client.chatLog:
             ypos = 350
             for chat in self.client.chatLog:
-                chatText = self.font.render("> " + chat, True, (0,0,0))
+                name = chat[0:8]
+                msg = chat[9:]
+                chatText = self.font.render(">{0}: {1}".format(name, msg), True, (0,0,0))
                 self.screen.blit(chatText, (5, ypos))
                 ypos += 20
                 
@@ -152,17 +162,40 @@ class Gui:
                     self.running = 0
             self.draw()
             self.clock.tick(100)
-
-            #get text input
             text = None
-            text = self.chatTextBox.update(events)
-
-            #if text is input
-            if text:
-                print text
-                if self.client.isConnected:
-                    cchat = self.client.makeCchat(text)
-                    self.client.sock.send(cchat)
+            if self.client.manual:
+            #get text input
+                if self.client.active:
+                    text = self.playTextBox.update(events)
+                    if text:
+                        if text == "pass":
+                            cplay = "[cplay|52,52,52,52]"
+                        else:
+                            cards = text.split()
+##                            for card in cards:
+##                                if card in self.client.hand:
+##                                    self.client.hand.remove(card)
+                            while len(cards) < 4:
+                                cards.append('52')
+                            cplay = "[cplay|{0},{1},{2},{3}]".format(cards[0],cards[1],cards[2],cards[3])
+                        self.client.sock.send(cplay)
+                        self.client.active = False
+                        self.client.sock.send("[chand]")
+                elif self.client.swapping:
+                    text = self.swapTextBox.update(events)
+                    if text:
+                        cswap = '[cswap|' + text + ']'
+                        self.client.sock.send(cswap)
+                        self.client.swapping = False
+                else:
+                    text = self.chatTextBox.update(events)
+                #if text is input
+                    if text:
+                        if self.client.isConnected:
+                            cchat = self.client.makeCchat(text)
+                            self.client.sock.send(cchat)
+            
+            
         pygame.quit()
         self.clientThread.join()
         
@@ -178,5 +211,6 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    testGui = Gui(args.s, args.p, args.n, args.m)
+    #testGui = Gui(args.s, args.p, args.n, args.m)
+    testGui = Gui(args.s, args.p, args.n, 1)
     testGui.run()

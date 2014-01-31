@@ -59,7 +59,8 @@ class Server:
                     player.hand = []
                     stabl = self.msgMaker.makeStabl()
                     self.sendToAll(stabl)
-                    self.game.table.remove(player)
+                    if player in self.game.table:
+                            self.game.table.remove(player)
                     self.game.gameTable.remove(player)
                         
                         
@@ -308,7 +309,7 @@ class Server:
                     stabl = self.msgMaker.makeStabl()
                     self.sendToAll(stabl)
                     
-                elif chandMatch == 'chand' and player.atTable:
+                elif chandMatch and player.atTable:
 
                     shand = self.msgMaker.makeShand(player.hand)
                     self.sendToPlayer(shand, player)
