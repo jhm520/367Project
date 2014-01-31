@@ -204,15 +204,15 @@ class Gui:
         self.font3 = pygame.font.SysFont(None,32)
 
         self.chatTextBox = Input(x=5, y=460, font=self.font, maxlength=63, color=(0,0,0), prompt='Chat: ')
-        self.playTextBox = Input(x=210, y=400, font=self.font, maxlength=20, color=(255,0,0), prompt='Input Play:')
-        self.swapTextBox = Input(x=210, y=420, font=self.font, maxlength=2, color=(255,0,0), prompt='Input Card to Swap:')
+        self.playTextBox = Input(x=210, y=400, font=self.font3, maxlength=20, color=(255,0,0), prompt='Input Play: ')
+        self.swapTextBox = Input(x=210, y=430, font=self.font3, maxlength=2, color=(255,0,0), prompt='Input Card to Swap: ')
 
     def draw(self):
         #draw background
         #self.screen.blit(self.bg, (0,0))
         self.screen.fill((0,150,0))
-        pygame.draw.line(self.screen, (0,0,0), (0, 320), (640, 320), 2)
-        pygame.draw.line(self.screen, (0,0,0), (480, 0), (480, 320), 2)
+        pygame.draw.line(self.screen, (0,0,0), (0, 320), (480, 320), 2)
+        pygame.draw.line(self.screen, (0,0,0), (480, 0), (480, 480), 2)
         pygame.draw.line(self.screen, (0,0,0), (200, 320), (200, 480), 2)
 
 
@@ -224,11 +224,15 @@ class Gui:
             self.screen.blit(lobbyText,(490,10))
             
             if self.client.lobby:
-                ypos = 30
+                posCnt = 0
                 for player in self.client.lobby:
                     playerText = self.font.render(player, True, (0,0,0))
-                    self.screen.blit(playerText, (500,ypos))
-                    ypos += 20
+                    if posCnt > 21:
+                        self.screen.blit(playerText, (560,30+((posCnt-22)*20)))
+                    else:
+                        self.screen.blit(playerText, (500,30+(posCnt*20)))
+                    posCnt += 1
+                    #ypos += 20
             
             if self.client.table:
                 
@@ -236,34 +240,36 @@ class Gui:
                 gameInProgressText = self.font.render("Game currently in progress", True, (0,0,0))
                 
                 #draw table
-                tableDrawPositions = [(100,100), (200,100), (300,100), (350, 150), (250, 200), (150, 200), (50, 150)]
+                tableDrawPositions = [(15,50), (125,50), (235,50), (345, 50), (15, 150), (125, 150), (235, 150)]
                 tableActiveMarker = self.font.render(">", True, (0,0,0))
                 posCnt = 0
 
                 for player in self.client.table:
                     pos = tableDrawPositions[posCnt]
                     tablePlayerText = self.font.render(player.name, True, (0,0,0))
-                    tablePlayerNumCards = self.font.render(player.numCards, True, (0,0,0))
-                    tablePlayerStrikes = self.font.render(player.strikes, True, (0,0,0))
-                    tablePlayerStatus = self.font.render(player.status, True, (0,0,0))
+                    tablePlayerNumCards = self.font.render("-cards: " + player.numCards, True, (0,0,0))
+                    tablePlayerStrikes = self.font.render("-strikes: " + player.strikes, True, (0,0,0))
+                    tablePlayerStatus = self.font.render("-status: " + player.status, True, (0,0,0))
                     self.screen.blit(tablePlayerText, pos)
-                    self.screen.blit(tablePlayerNumCards, (pos[0], pos[1] + 15))
-                    self.screen.blit(tablePlayerStrikes, (pos[0]+15, pos[1] + 15))
-                    self.screen.blit(tablePlayerStatus, (pos[0]+30, pos[1]+15))
+                    self.screen.blit(tablePlayerNumCards, (pos[0]+15, pos[1] + 45))
+                    self.screen.blit(tablePlayerStrikes, (pos[0]+15, pos[1] + 30))
+                    self.screen.blit(tablePlayerStatus, (pos[0]+15, pos[1]+15))
                     
                     if player.status == "a":
                         self.screen.blit(tableActiveMarker, (pos[0]-10, pos[1]))
                     if player is self.client.player:
                         tableYouMarker = self.font.render("<- You!", True, (255,0,0))
-                        self.screen.blit(tableYouMarker, (pos[0]+50, pos[1]))
+                        self.screen.blit(tableYouMarker, (pos[0]+55, pos[1]))
                     posCnt += 1
 
-
-                cardDrawPositions = [(175,150), (200, 150),(225, 150), (250,150)]
+                #draw last play
+                cardDrawPositions = [(225,275), (275, 275),(325, 275), (375,275)]
                 if self.client.lastPlay:
+                    lastPlayText = self.font3.render("Last Play:", True, (0,0,0))
+                    self.screen.blit(lastPlayText, (100, 275))
                     posCnt = 0
                     for card in self.client.lastPlay:
-                        tableCardText = self.font.render(card, True, (0,0,0))
+                        tableCardText = self.font3.render(card, True, (0,0,0))
                         self.screen.blit(tableCardText, cardDrawPositions[posCnt])
                         posCnt += 1
 
@@ -274,10 +280,12 @@ class Gui:
                     posCnt = 0
                     for card in self.client.hand:
                         handCardText = self.font.render(card, True, (0,0,0))
-                        if posCnt < 13:
+                        if posCnt < 8:
                             self.screen.blit(handCardText, (275 + posCnt * 25, 325))
+                        elif posCnt < 16:
+                            self.screen.blit(handCardText, (275 + (posCnt-8) * 25, 345))
                         else:
-                            self.screen.blit(handCardText, (275 + (posCnt-13) * 25, 345))
+                            self.screen.blit(handCardText, (275 + (posCnt-16)*25, 365))
                         posCnt += 1
 
 
@@ -313,8 +321,80 @@ class Gui:
                 chatText = self.font.render(">{0}: {1}".format(name, msg), True, (0,0,0))
                 self.screen.blit(chatText, (5, ypos))
                 ypos += 16
-                
+
         pygame.display.update()
+
+##        #TESTING ONLY (Draw everything)
+##        #draw lobby
+##        lobbyText = self.font.render("Lobby (" + str(len(self.client.lobby)) + ")", True, (0,0,0))
+##        self.screen.blit(lobbyText,(490,10))
+##        
+##        playerText = self.font.render("johnnash", True, (0,0,0))
+##        for i in range(35):
+##            if i > 21:
+##                self.screen.blit(playerText, (560,30+((i-22)*20)))
+##            else:
+##                self.screen.blit(playerText, (500,30+(i*20)))
+##        #Draw gameInProgress
+##        gameInProgressText = self.font.render("Game currently in progress", True, (0,0,0))
+##        self.screen.blit(gameInProgressText, (5, 20))
+##        #draw table
+##        tableDrawPositions = [(15,50), (125,50), (235,50), (345, 50), (15, 150), (125, 150), (235, 150)]
+##        tableActiveMarker = self.font.render(">", True, (0,0,0))
+##        posCnt = 0
+##
+##        for pos in tableDrawPositions:
+##            #pos = tableDrawPositions[posCnt]
+##            tablePlayerText = self.font.render("johnnash", True, (0,0,0))
+##            tablePlayerNumCards = self.font.render("-Cards: 00", True, (0,0,0))
+##            tablePlayerStrikes = self.font.render("-Strikes: 0", True, (0,0,0))
+##            tablePlayerStatus = self.font.render("-Status: a", True, (0,0,0))
+##            self.screen.blit(tablePlayerText, pos)
+##            self.screen.blit(tablePlayerNumCards, (pos[0]+15, pos[1] + 45))
+##            self.screen.blit(tablePlayerStrikes, (pos[0]+15, pos[1] + 30))
+##            self.screen.blit(tablePlayerStatus, (pos[0]+15, pos[1]+15))
+##            
+##            #if player.status == "a":
+##            self.screen.blit(tableActiveMarker, (pos[0]-10, pos[1]))
+##            #if player is self.client.player:
+##            tableYouMarker = self.font.render("<- You!", True, (255,0,0))
+##            self.screen.blit(tableYouMarker, (pos[0]+55, pos[1]))
+##            #posCnt += 1
+##
+##
+##        cardDrawPositions = [(225,275), (275, 275),(325, 275), (375,275)]
+##        #if self.client.lastPlay:
+##            #posCnt = 0
+##        lastPlayText = self.font3.render("Last Play:", True, (0,0,0))
+##        self.screen.blit(lastPlayText, (100, 275))
+##        for pos in cardDrawPositions:
+##            tableCardText = self.font3.render("52", True, (0,0,0))
+##            self.screen.blit(tableCardText, pos)
+##            posCnt += 1
+##
+##        #draw hand
+##        yourHandText = self.font.render("Your Hand:", True, (0,0,0))
+##        self.screen.blit(yourHandText, (210, 325))
+##        #if self.client.hand:
+##        posCnt = 0
+##        for i in range(17):
+##            handCardText = self.font.render("22", True, (0,0,0))
+##            if posCnt < 8:
+##                self.screen.blit(handCardText, (275 + posCnt * 25, 325))
+##            elif posCnt < 16:
+##                self.screen.blit(handCardText, (275 + (posCnt-8) * 25, 345))
+##            else:
+##                self.screen.blit(handCardText, (275 + (posCnt-16)*25, 365))
+##            posCnt += 1
+##
+##        #draw text boxes
+##        self.playTextBox.draw(self.screen)
+##        self.swapTextBox.draw(self.screen)
+##        self.chatTextBox.draw(self.screen)
+##
+##        
+##                
+##        pygame.display.update()
 
     def run(self):
         self.running = 1

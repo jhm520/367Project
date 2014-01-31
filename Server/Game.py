@@ -238,7 +238,7 @@ class Game:
                 for kplayer in self.table:
                     kplayer.isActive = False
                     kplayer.status = "w"
-                #self.activePlayer = None
+                self.activePlayer = None
                 self.firstRound = 0
                 self.lastPlayer = None
                 self.setup()
@@ -337,7 +337,7 @@ class Game:
             if len(thePlayCards) >= len(lastPlayCards):
                 if theRank >= lastRank:
                     self.playCards(player, thePlay, thePlayCards)
-                    if theRank == lastRank and len(thePlayCards) == len(lastPlayCards):
+                    if theRank == lastRank and len(thePlayCards) == len(lastPlayCards) and self.activePlayer:
                         print "Player ", self.activePlayer.name, "skipped."
                         skippedPlayer = self.activePlayer
                         self.nextPlayer()

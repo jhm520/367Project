@@ -17,3 +17,6 @@ def convertToCard (num):
 
 
 print convertToCard("32")
+
+for i in range(7):
+    print i

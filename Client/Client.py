@@ -176,6 +176,7 @@ class Client:
                     time.sleep(.1)
                     self.sock.send(cplay)
                     print "Sent:", cplay
+                    self.sock.send("[chand]")
                 
                 
     def updateHand(self, msg):
