@@ -24,7 +24,7 @@ class Gui:
         #make icon invisible
         icon = pygame.Surface((1,1))
         icon.set_alpha(0)
-        pygame.display.set_icon(icon)
+        pygame.display.set_icon(icon) 
         
         self.clock = pygame.time.Clock()
         
@@ -34,7 +34,8 @@ class Gui:
         self.font2 = pygame.font.SysFont(None,64)
         self.font3 = pygame.font.SysFont(None,32)
 
-        self.textBox = eztext.Input(x=5, y = 325, font=self.font, maxlength=63, color=(0,0,0), prompt='Chat: ')
+        self.chatTextBox = eztext.Input(x=5, y=325, font=self.font, maxlength=63, color=(0,0,0), prompt='Chat: ')
+        self.playTextBox = eztext.Input(x=210, y=400, font=self.font, maxlength=20, color=(255,0,0), prompt='Input Play:')
 
     def draw(self):
         #draw background
@@ -83,16 +84,31 @@ class Gui:
                     if player.status == "a":
                         self.screen.blit(tableActiveMarker, (pos[0]-10, pos[1]))
                     if player is self.client.player:
-                        tableYouMarker = self.font.render("<-- You!", True, (255,0,0))
-                        self.screen.blit(tableYouMarker, (pos[0]+40, pos[1]))
+                        tableYouMarker = self.font.render("<- You!", True, (255,0,0))
+                        self.screen.blit(tableYouMarker, (pos[0]+50, pos[1]))
                     posCnt += 1
 
 
                 cardDrawPositions = [(175,150), (200, 150),(225, 150), (250,150)]
+                if self.client.lastPlay:
+                    posCnt = 0
+                    for card in self.client.lastPlay:
+                        tableCardText = self.font.render(card, True, (0,0,0))
+                        self.screen.blit(tableCardText, cardDrawPositions[posCnt])
+                        posCnt += 1
 
-                for pos in cardDrawPositions:
-                    tableCardText = self.font.render("C{0}".format(cardDrawPositions.index(pos)), True, (0,0,0))
-                    self.screen.blit(tableCardText, pos)
+                #draw hand
+                yourHandText = self.font.render("Your Hand:", True, (0,0,0))
+                self.screen.blit(yourHandText, (210, 325))
+                if self.client.hand:
+                    posCnt = 0
+                    for card in self.client.hand:
+                        handCardText = self.font.render(card, True, (0,0,0))
+                        if posCnt < 13:
+                            self.screen.blit(handCardText, (275 + posCnt * 25, 325))
+                        else:
+                            self.screen.blit(handCardText, (275 + (posCnt-13) * 25, 345))
+                        posCnt += 1
 
 
                 
@@ -105,27 +121,11 @@ class Gui:
 
         
         self.screen.blit(connectText,(5,5))
-        
-        
-
-        
 
 
-        #draw hand
-
-        yourHandText = self.font.render("Your Hand:", True, (0,0,0))
-        self.screen.blit(yourHandText, (210, 325))
-        cards = ['00','01','02','03','04','05','06','07','08','09','10','11','12','13','14','15','16']
-        for card in cards:
-            handCardText = self.font.render(card, True, (0,0,0))
-            if cards.index(card) < 13:
-                self.screen.blit(handCardText, (275 + cards.index(card) * 25, 325))
-            else:
-                self.screen.blit(handCardText, (275 + (cards.index(card)-13) * 25, 345))
-
-
-        #draw textBox
-        self.textBox.draw(self.screen)
+        self.playTextBox.draw(self.screen)
+        #draw chatTextBox
+        self.chatTextBox.draw(self.screen)
 
         #draw chat
         if self.client.chatLog:
@@ -155,7 +155,7 @@ class Gui:
 
             #get text input
             text = None
-            text = self.textBox.update(events)
+            text = self.chatTextBox.update(events)
 
             #if text is input
             if text:
@@ -172,7 +172,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Get command line parameters.')
     parser.add_argument('-s', nargs='?', const='localhost', type=str, default='localhost')
     parser.add_argument('-p', nargs='?', const=36727, type=int, default=36727)
-    parser.add_argument('-n', nargs='?', const='john', type=str, default='john')
+    parser.add_argument('-n', nargs='?', const='johnnash', type=str, default='johnnash')
     parser.add_argument('-m', action='store_true')
     
 
