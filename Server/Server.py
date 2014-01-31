@@ -203,7 +203,7 @@ class Server:
             self.timerThread = threading.Thread(target=self.theTimer)
             self.timerThread.start()
             print "Server is running..."
-            self.socks = [self.server, sys.stdin]
+            self.socks = [self.server]
 
             while self.running:
 

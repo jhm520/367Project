@@ -17,7 +17,7 @@ class Gui:
         #self.bg = pygame.image.load(os.path.join('data', 'map.png'))
 
         self.screen = pygame.display.set_mode((640, 480))
-	
+    
         pygame.display.set_caption("Warlords")
         pygame.mouse.set_visible(1)
 
@@ -39,30 +39,89 @@ class Gui:
     def draw(self):
         #draw background
         #self.screen.blit(self.bg, (0,0))
-	self.screen.fill((0,200,0))
-	pygame.draw.line(self.screen, (0,0,0), (0, 320), (640, 320), 2)
-	pygame.draw.line(self.screen, (0,0,0), (480, 0), (480, 320), 2)
-	pygame.draw.line(self.screen, (0,0,0), (200, 320), (200, 480), 2)
+        self.screen.fill((0,150,0))
+        pygame.draw.line(self.screen, (0,0,0), (0, 320), (640, 320), 2)
+        pygame.draw.line(self.screen, (0,0,0), (480, 0), (480, 320), 2)
+        pygame.draw.line(self.screen, (0,0,0), (200, 320), (200, 480), 2)
 
 
         #draw connection info
         if self.client.isConnected:
             connectText = self.font.render("Connected to {0} on port {1} as {2} in {3} mode.".format(str(self.client.host), str(self.client.port),self.client.name, self.client.mode), True, (0,0,0))
+            #draw lobby
+            lobbyText = self.font.render("Lobby (" + str(len(self.client.lobby)) + ")", True, (0,0,0))
+            self.screen.blit(lobbyText,(490,10))
+            
+            if self.client.lobby:
+                ypos = 30
+                for player in self.client.lobby:
+                    playerText = self.font.render(player, True, (0,0,0))
+                    self.screen.blit(playerText, (500,ypos))
+                    ypos += 20
+            
+            if self.client.table:
+                
+                #Draw gameInProgress
+                gameInProgressText = self.font.render("Game currently in progress", True, (0,0,0))
+                
+                #draw table
+                tableDrawPositions = [(100,100), (200,100), (300,100), (350, 150), (250, 200), (150, 200), (50, 150)]
+                tableActiveMarker = self.font.render(">", True, (0,0,0))
+                posCnt = 0
+
+                for player in self.client.table:
+                    pos = tableDrawPositions[posCnt]
+                    tablePlayerText = self.font.render(player.name, True, (0,0,0))
+                    tablePlayerNumCards = self.font.render(player.numCards, True, (0,0,0))
+                    tablePlayerStrikes = self.font.render(player.strikes, True, (0,0,0))
+                    tablePlayerStatus = self.font.render(player.status, True, (0,0,0))
+                    self.screen.blit(tablePlayerText, pos)
+                    self.screen.blit(tablePlayerNumCards, (pos[0], pos[1] + 15))
+                    self.screen.blit(tablePlayerStrikes, (pos[0]+15, pos[1] + 15))
+                    self.screen.blit(tablePlayerStatus, (pos[0]+30, pos[1]+15))
+                    
+                    if player.status == "a":
+                        self.screen.blit(tableActiveMarker, (pos[0]-10, pos[1]))
+                    if player is self.client.player:
+                        tableYouMarker = self.font.render("<-- You!", True, (255,0,0))
+                        self.screen.blit(tableYouMarker, (pos[0]+40, pos[1]))
+                    posCnt += 1
+
+
+                cardDrawPositions = [(175,150), (200, 150),(225, 150), (250,150)]
+
+                for pos in cardDrawPositions:
+                    tableCardText = self.font.render("C{0}".format(cardDrawPositions.index(pos)), True, (0,0,0))
+                    self.screen.blit(tableCardText, pos)
+
+
+                
+            else:
+                gameInProgressText = self.font.render("Game not in progress.", True, (0,0,0))
+
+            self.screen.blit(gameInProgressText, (5, 20))
         else:
             connectText = self.font.render("Not connected.", True, (0,0,0))
 
-        self.screen.blit(connectText,(5,10))
         
-        #draw lobby
-        lobbyText = self.font.render("Lobby (" + str(len(self.client.lobby)) + ")", True, (0,0,0))
-        self.screen.blit(lobbyText,(490,10))
+        self.screen.blit(connectText,(5,5))
         
-        if self.client.lobby:
-            ypos = 30
-            for player in self.client.lobby:
-                playerText = self.font.render(player, True, (0,0,0))
-                self.screen.blit(playerText, (500,ypos))
-                ypos += 20
+        
+
+        
+
+
+        #draw hand
+
+        yourHandText = self.font.render("Your Hand:", True, (0,0,0))
+        self.screen.blit(yourHandText, (210, 325))
+        cards = ['00','01','02','03','04','05','06','07','08','09','10','11','12','13','14','15','16']
+        for card in cards:
+            handCardText = self.font.render(card, True, (0,0,0))
+            if cards.index(card) < 13:
+                self.screen.blit(handCardText, (275 + cards.index(card) * 25, 325))
+            else:
+                self.screen.blit(handCardText, (275 + (cards.index(card)-13) * 25, 345))
 
 
         #draw textBox
@@ -79,17 +138,18 @@ class Gui:
         pygame.display.update()
 
     def run(self):
-        running = True
+        self.running = 1
         self.clientThread = threading.Thread(target=self.client.run)
         self.clientThread.start() #yay this works!
         #self.clientThread.join()
         
-        while running:
+        while self.running:
             keystate = pygame.key.get_pressed()
             events = pygame.event.get()
             for event in events:
                 if event.type == QUIT or keystate[K_ESCAPE]:
-                    running = False
+                    self.client.close()
+                    self.running = 0
             self.draw()
             self.clock.tick(100)
 
@@ -103,10 +163,8 @@ class Gui:
                 if self.client.isConnected:
                     cchat = self.client.makeCchat(text)
                     self.client.sock.send(cchat)
-                
         pygame.quit()
         self.clientThread.join()
-        sys.exit()
         
 
 if __name__ == '__main__':

@@ -174,6 +174,7 @@ class Client:
             newPlayer.numCards = minorfields[2]
             if newPlayer.name == self.name:
                 self.player = newPlayer
+            self.table.append(newPlayer)
         
         lastPlayCardStrs = lastPlayStr.split(',')
         self.lastPlay = []
@@ -293,7 +294,11 @@ class Client:
                 cchat = self.makeCchat(read)
                 time.sleep(.1)
                 self.sock.send(cchat)
-                    
+                
+    def close(self):
+        self.running = 0
+        self.sock.close()
+        
     def run(self):
         while len(self.name) != 8:
             self.name += ' '
@@ -304,61 +309,63 @@ class Client:
         self.sock.send(cjoin)
         #self.socks = [self.sock, sys.stdin]
         self.socks = [self.sock]
+        self.running = 1
 
         
         
-        while 1:
+        while self.running:
 #             if self.msgQueue:
 #                 self.interpMsg(self.msgQueue.pop(0))
 
             
-            
-            read_socks, write_socks, error_socks = select.select(self.socks, [], [])
-            for sock in read_socks:
-                if sock is self.sock:
-                    msg = self.sock.recv(self.bufsize)
-                    msgs = msg.split('][')
-                    for msg in msgs:
-                        if msg == '':
-                            break
-                        else:
-                            if msg[0] != '[':
-                                msg = '['+msg
-                            if msg[-1] != ']':
-                                msg += ']'
-                            print "Recv:", msg
-                            self.interpMsg(msg)
-                elif sock is sys.stdin:
-                    if self.manual:
-                        if self.active:
-                            cplaycards = sys.stdin.readline()
-                            cplay = "[cplay|"+cplaycards+"]"
-                            self.sock.send(cplay)
-                            self.active = False
-                        elif self.swapping:
-                            swapcard = sys.stdin.readline()
-                            self.hand.remove(swapcard)
-                            cswap = "[cswap|" + swapcard + "]"
-                            self.sock.send(cswap)
-                            self.swapping = False
-                        else:
-                            msg = sys.stdin.readline()
-                            if msg == "exit\n":
-                                self.sock.close()
-                                sys.exit()
+            try:
+                read_socks, write_socks, error_socks = select.select(self.socks, [], [])
+                for sock in read_socks:
+                    if sock is self.sock:
+                        msg = self.sock.recv(self.bufsize)
+                        msgs = msg.split('][')
+                        for msg in msgs:
+                            if msg == '':
+                                break
                             else:
-                                
-                                cchat = self.makeCchat(msg)
-                                self.sock.send(cchat)
-                    else:
-                        self.sock.close()
-                        sys.exit()
-                        
-            
-            if self.strikes >= 3:
-                break
-            
-        sys.exit()
+                                if msg[0] != '[':
+                                    msg = '['+msg
+                                if msg[-1] != ']':
+                                    msg += ']'
+                                print "Recv:", msg
+                                self.interpMsg(msg)
+                    elif sock is sys.stdin:
+                        if self.manual:
+                            if self.active:
+                                cplaycards = sys.stdin.readline()
+                                cplay = "[cplay|"+cplaycards+"]"
+                                self.sock.send(cplay)
+                                self.active = False
+                            elif self.swapping:
+                                swapcard = sys.stdin.readline()
+                                self.hand.remove(swapcard)
+                                cswap = "[cswap|" + swapcard + "]"
+                                self.sock.send(cswap)
+                                self.swapping = False
+                            else:
+                                msg = sys.stdin.readline()
+                                if msg == "exit\n":
+                                    self.sock.close()
+                                    sys.exit()
+                                else:
+                                    
+                                    cchat = self.makeCchat(msg)
+                                    self.sock.send(cchat)
+                        else:
+                            self.sock.close()
+                            sys.exit()
+                            
+                
+                if self.strikes >= 3:
+                    self.running = 0
+            except:
+                self.running = 0
+                print "Client Closed"
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Get command line parameters.')
