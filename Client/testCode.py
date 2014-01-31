@@ -1,15 +1,19 @@
-text = "11 12"
+def convertToCard (num):
 
-cards = text.split()
-while len(cards) < 4:
-    cards.append('52')
-cplay = "[cplay|{0},{1},{2},{3}]".format(cards[0],cards[1],cards[2],cards[3])
+    rank = int(num)/4 + 3
 
-print cplay
+    suitNum = int(num)%4
 
-cards = ["02", "11", "32", "01", "07"]
+    if suitNum == 0:
+        suit = "C"
+    elif suitNum == 1:
+        suit = "D"
+    elif suitNum == 2:
+        suit = "H"
+    elif suitNum == 3:
+        suit = "S"
+    
+    return str(rank) + suit
 
-cards.sort()
 
-for card in cards:
-    print card
+print convertToCard("32")

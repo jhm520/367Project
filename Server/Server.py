@@ -60,10 +60,9 @@ class Server:
                     stabl = self.msgMaker.makeStabl()
                     self.sendToAll(stabl)
                     if player in self.game.table:
-                            self.game.table.remove(player)
-                    self.game.gameTable.remove(player)
-                        
-                        
+                        self.game.table.remove(player)
+                    if player in self.game.gameTable:
+                        self.game.gameTable.remove(player)
                     
                     
                 #self.game.table.remove(player)

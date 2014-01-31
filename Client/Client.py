@@ -7,10 +7,6 @@ import select
 import argparse
 import os
 
-#change of plans, start the client by running the GUI first, which starts the client program in a seperate thread
-import pygame
-from pygame.locals import *
-
 class Client:
     def __init__(self, host, port, name, manual):
         self.host = host
@@ -122,19 +118,6 @@ class Client:
             cplay = '[cplay|' + thePlayCards[0] + ',' + thePlayCards[1] + ',' + thePlayCards[2] + ',' + thePlayCards[3] + ']'
 
             return cplay
-        
-##            print "It is your turn"
-##            handStr = ""
-##            for card in self.hand:
-##                handStr += card + ','
-##            print "Your hand:", handStr
-##            lastPlayStr = ""
-##            for card in self.lastPlay:
-##                lastPlayStr += card + ","
-##            print "LastPlay", lastPlayStr
-##            print "Input card numbers ex. '52,52,52,52': "
-##            #cplay = "[cplay|"+cplaycards+"]"
-##            #return cplay
         
         
     
@@ -259,7 +242,7 @@ class Client:
                 self.swapping = True
         
         elif msgHeader == 'schat':
-            if len(self.chatLog) >= 5:
+            if len(self.chatLog) >= 7:
                 self.chatLog.pop(0)
             self.chatLog.append(msgBody)
             
@@ -303,17 +286,12 @@ class Client:
         self.connect()
         time.sleep(.1)
         self.sock.send(cjoin)
-        #self.socks = [self.sock, sys.stdin]
         self.socks = [self.sock]
         self.running = 1
 
         
         
         while self.running:
-#             if self.msgQueue:
-#                 self.interpMsg(self.msgQueue.pop(0))
-
-            
             try:
                 read_socks, write_socks, error_socks = select.select(self.socks, [], [])
                 for sock in read_socks:
@@ -329,32 +307,7 @@ class Client:
                                 if msg[-1] != ']':
                                     msg += ']'
                                 print "Recv:", msg
-                                self.interpMsg(msg)
-##                        if self.manual:
-##                            if self.active:
-##                                cplaycards = sys.stdin.readline()
-##                                cplay = "[cplay|"+cplaycards+"]"
-##                                self.sock.send(cplay)
-##                                self.active = False
-##                            elif self.swapping:
-##                                swapcard = sys.stdin.readline()
-##                                self.hand.remove(swapcard)
-##                                cswap = "[cswap|" + swapcard + "]"
-##                                self.sock.send(cswap)
-##                                self.swapping = False
-##                            else:
-##                                msg = sys.stdin.readline()
-##                                if msg == "exit\n":
-##                                    self.sock.close()
-##                                    sys.exit()
-##                                else:
-##                                    
-##                                    cchat = self.makeCchat(msg)
-##                                    self.sock.send(cchat)
-##                        else:
-##                            self.sock.close()
-##                            sys.exit()
-                            
+                                self.interpMsg(msg)               
                 
                 if self.strikes >= 3:
                     self.running = 0
