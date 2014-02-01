@@ -1,322 +1,481 @@
-from Player import *
-from socket import *
-import threading
+import pygame
+from pygame.locals import *
+import string
+import os
 import sys
 import time
-import select
 import argparse
-import os
+from cmdClient import *
 
-class Client:
+
+class ConfigError(KeyError): pass
+
+class Config:
+    """ A utility for configuration """
+    def __init__(self, options, *look_for):
+        assertions = []
+        for key in look_for:
+            if key[0] in options.keys(): exec('self.'+key[0]+' = options[\''+key[0]+'\']')
+            else: exec('self.'+key[0]+' = '+key[1])
+            assertions.append(key[0])
+        for key in options.keys():
+            if key not in assertions: raise ConfigError(key+' not expected as option')
+
+class Input:
+    """ A text input for pygame apps """
+    def __init__(self, **options):
+        """ Options: x, y, font, color, restricted, maxlength, prompt """
+        self.options = Config(options, ['x', '0'], ['y', '0'], ['font', 'pygame.font.Font(None, 32)'],
+                              ['color', '(0,0,0)'], ['restricted', '\'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!"#$%&\\\'()*+,-./:;<=>?@[\]^_`{|}~\''],
+                              ['maxlength', '-1'], ['prompt', '\'\''])
+        self.x = self.options.x; self.y = self.options.y
+        self.font = self.options.font
+        self.color = self.options.color
+        self.restricted = self.options.restricted
+        self.maxlength = self.options.maxlength
+        self.prompt = self.options.prompt; self.value = ''
+        self.shifted = False
+        self.pause = 0
+
+    def set_pos(self, x, y):
+        """ Set the position to x, y """
+        self.x = x
+        self.y = y
+
+    def set_font(self, font):
+        """ Set the font for the input """
+        self.font = font
+
+    def draw(self, surface):
+        """ Draw the text input to a surface """
+        text = self.font.render(self.prompt+self.value, 1, self.color)
+        surface.blit(text, (self.x, self.y))
+
+    def update(self, events):
+        """Hold Backspace Thingy"""
+##        pressed = pygame.key.get_pressed()
+##        if self.pause == 3 and pressed[K_BACKSPACE]:
+##            self.pause = 0
+##            self.value = self.value[:-1]
+##        elif pressed[K_BACKSPACE]:
+##            self.pause += 1
+##        else:
+##            self.pause = 0
+        """ Update the input based on passed events """
+        for event in events:
+            
+            if event.type == KEYUP:
+                if event.key == K_LSHIFT or event.key == K_RSHIFT: self.shifted = False
+            if event.type == KEYDOWN:
+                if event.key == K_BACKSPACE: self.value = self.value[:-1]
+                elif event.key == K_LSHIFT or event.key == K_RSHIFT: self.shifted = True
+                elif event.key == K_SPACE: self.value += ' '
+                elif event.key == K_RETURN:
+                    val = self.value
+                    self.value = ''
+                    return val
+                if not self.shifted:
+                    if event.key == K_a and 'a' in self.restricted: self.value += 'a'
+                    elif event.key == K_b and 'b' in self.restricted: self.value += 'b'
+                    elif event.key == K_c and 'c' in self.restricted: self.value += 'c'
+                    elif event.key == K_d and 'd' in self.restricted: self.value += 'd'
+                    elif event.key == K_e and 'e' in self.restricted: self.value += 'e'
+                    elif event.key == K_f and 'f' in self.restricted: self.value += 'f'
+                    elif event.key == K_g and 'g' in self.restricted: self.value += 'g'
+                    elif event.key == K_h and 'h' in self.restricted: self.value += 'h'
+                    elif event.key == K_i and 'i' in self.restricted: self.value += 'i'
+                    elif event.key == K_j and 'j' in self.restricted: self.value += 'j'
+                    elif event.key == K_k and 'k' in self.restricted: self.value += 'k'
+                    elif event.key == K_l and 'l' in self.restricted: self.value += 'l'
+                    elif event.key == K_m and 'm' in self.restricted: self.value += 'm'
+                    elif event.key == K_n and 'n' in self.restricted: self.value += 'n'
+                    elif event.key == K_o and 'o' in self.restricted: self.value += 'o'
+                    elif event.key == K_p and 'p' in self.restricted: self.value += 'p'
+                    elif event.key == K_q and 'q' in self.restricted: self.value += 'q'
+                    elif event.key == K_r and 'r' in self.restricted: self.value += 'r'
+                    elif event.key == K_s and 's' in self.restricted: self.value += 's'
+                    elif event.key == K_t and 't' in self.restricted: self.value += 't'
+                    elif event.key == K_u and 'u' in self.restricted: self.value += 'u'
+                    elif event.key == K_v and 'v' in self.restricted: self.value += 'v'
+                    elif event.key == K_w and 'w' in self.restricted: self.value += 'w'
+                    elif event.key == K_x and 'x' in self.restricted: self.value += 'x'
+                    elif event.key == K_y and 'y' in self.restricted: self.value += 'y'
+                    elif event.key == K_z and 'z' in self.restricted: self.value += 'z'
+                    elif event.key == K_0 and '0' in self.restricted: self.value += '0'
+                    elif event.key == K_1 and '1' in self.restricted: self.value += '1'
+                    elif event.key == K_2 and '2' in self.restricted: self.value += '2'
+                    elif event.key == K_3 and '3' in self.restricted: self.value += '3'
+                    elif event.key == K_4 and '4' in self.restricted: self.value += '4'
+                    elif event.key == K_5 and '5' in self.restricted: self.value += '5'
+                    elif event.key == K_6 and '6' in self.restricted: self.value += '6'
+                    elif event.key == K_7 and '7' in self.restricted: self.value += '7'
+                    elif event.key == K_8 and '8' in self.restricted: self.value += '8'
+                    elif event.key == K_9 and '9' in self.restricted: self.value += '9'
+                    elif event.key == K_BACKQUOTE and '`' in self.restricted: self.value += '`'
+                    elif event.key == K_MINUS and '-' in self.restricted: self.value += '-'
+                    elif event.key == K_EQUALS and '=' in self.restricted: self.value += '='
+                    elif event.key == K_LEFTBRACKET and '[' in self.restricted: self.value += '['
+                    elif event.key == K_RIGHTBRACKET and ']' in self.restricted: self.value += ']'
+                    elif event.key == K_BACKSLASH and '\\' in self.restricted: self.value += '\\'
+                    elif event.key == K_SEMICOLON and ';' in self.restricted: self.value += ';'
+                    elif event.key == K_QUOTE and '\'' in self.restricted: self.value += '\''
+                    elif event.key == K_COMMA and ',' in self.restricted: self.value += ','
+                    elif event.key == K_PERIOD and '.' in self.restricted: self.value += '.'
+                    elif event.key == K_SLASH and '/' in self.restricted: self.value += '/'
+                elif self.shifted:
+                    if event.key == K_a and 'A' in self.restricted: self.value += 'A'
+                    elif event.key == K_b and 'B' in self.restricted: self.value += 'B'
+                    elif event.key == K_c and 'C' in self.restricted: self.value += 'C'
+                    elif event.key == K_d and 'D' in self.restricted: self.value += 'D'
+                    elif event.key == K_e and 'E' in self.restricted: self.value += 'E'
+                    elif event.key == K_f and 'F' in self.restricted: self.value += 'F'
+                    elif event.key == K_g and 'G' in self.restricted: self.value += 'G'
+                    elif event.key == K_h and 'H' in self.restricted: self.value += 'H'
+                    elif event.key == K_i and 'I' in self.restricted: self.value += 'I'
+                    elif event.key == K_j and 'J' in self.restricted: self.value += 'J'
+                    elif event.key == K_k and 'K' in self.restricted: self.value += 'K'
+                    elif event.key == K_l and 'L' in self.restricted: self.value += 'L'
+                    elif event.key == K_m and 'M' in self.restricted: self.value += 'M'
+                    elif event.key == K_n and 'N' in self.restricted: self.value += 'N'
+                    elif event.key == K_o and 'O' in self.restricted: self.value += 'O'
+                    elif event.key == K_p and 'P' in self.restricted: self.value += 'P'
+                    elif event.key == K_q and 'Q' in self.restricted: self.value += 'Q'
+                    elif event.key == K_r and 'R' in self.restricted: self.value += 'R'
+                    elif event.key == K_s and 'S' in self.restricted: self.value += 'S'
+                    elif event.key == K_t and 'T' in self.restricted: self.value += 'T'
+                    elif event.key == K_u and 'U' in self.restricted: self.value += 'U'
+                    elif event.key == K_v and 'V' in self.restricted: self.value += 'V'
+                    elif event.key == K_w and 'W' in self.restricted: self.value += 'W'
+                    elif event.key == K_x and 'X' in self.restricted: self.value += 'X'
+                    elif event.key == K_y and 'Y' in self.restricted: self.value += 'Y'
+                    elif event.key == K_z and 'Z' in self.restricted: self.value += 'Z'
+                    elif event.key == K_0 and ')' in self.restricted: self.value += ')'
+                    elif event.key == K_1 and '!' in self.restricted: self.value += '!'
+                    elif event.key == K_2 and '@' in self.restricted: self.value += '@'
+                    elif event.key == K_3 and '#' in self.restricted: self.value += '#'
+                    elif event.key == K_4 and '$' in self.restricted: self.value += '$'
+                    elif event.key == K_5 and '%' in self.restricted: self.value += '%'
+                    elif event.key == K_6 and '^' in self.restricted: self.value += '^'
+                    elif event.key == K_7 and '&' in self.restricted: self.value += '&'
+                    elif event.key == K_8 and '*' in self.restricted: self.value += '*'
+                    elif event.key == K_9 and '(' in self.restricted: self.value += '('
+                    elif event.key == K_BACKQUOTE and '~' in self.restricted: self.value += '~'
+                    elif event.key == K_MINUS and '_' in self.restricted: self.value += '_'
+                    elif event.key == K_EQUALS and '+' in self.restricted: self.value += '+'
+                    elif event.key == K_LEFTBRACKET and '{' in self.restricted: self.value += '{'
+                    elif event.key == K_RIGHTBRACKET and '}' in self.restricted: self.value += '}'
+                    elif event.key == K_BACKSLASH and '|' in self.restricted: self.value += '|'
+                    elif event.key == K_SEMICOLON and ':' in self.restricted: self.value += ':'
+                    elif event.key == K_QUOTE and '"' in self.restricted: self.value += '"'
+                    elif event.key == K_COMMA and '<' in self.restricted: self.value += '<'
+                    elif event.key == K_PERIOD and '>' in self.restricted: self.value += '>'
+                    elif event.key == K_SLASH and '?' in self.restricted: self.value += '?'
+
+        if len(self.value) > self.maxlength and self.maxlength >= 0: self.value = self.value[:-1]
+
+
+
+class Gui:
+
     def __init__(self, host, port, name, manual):
-        self.host = host
-        self.port = port
-        self.name = name
-        self.sock = None
-        self.bufsize = 512
-        self.timeout = 15
-        self.isConnected = False
-        self.lobby = []
-        self.table = []
-        self.lastPlay = []
-        self.firstRound = None
-        self.player = None
-        self.hand = []
-        self.manual = manual
-        self.chatLog = []
-        if manual:
-            self.mode = "manual"
+
+        #instantiate the Client for this GUI
+        self.client = Client(host, port, name, manual)
+            
+        pygame.init()
+
+        #the GUI should reference the client, but never modify it
+
+        self.screen = pygame.display.set_mode((640, 480))
+    
+        pygame.display.set_caption("Warlords")
+        pygame.mouse.set_visible(1)
+
+        #make icon invisible
+        icon = pygame.Surface((1,1))
+        icon.set_alpha(0)
+        pygame.display.set_icon(icon) 
+        
+        self.clock = pygame.time.Clock()
+        
+        
+
+        self.font = pygame.font.SysFont(None,16)
+        self.font2 = pygame.font.SysFont(None,64)
+        self.font3 = pygame.font.SysFont(None,32)
+
+        self.chatTextBox = Input(x=5, y=460, font=self.font, maxlength=63, color=(0,0,0), prompt='Chat: ')
+        self.playTextBox = Input(x=210, y=400, font=self.font3, maxlength=20, color=(255,0,0), prompt='Input Play: ')
+        self.swapTextBox = Input(x=210, y=430, font=self.font3, maxlength=2, color=(255,0,0), prompt='Input Card to Swap: ')
+        
+    def rank(self, card):
+
+        if card == "":
+            return "_"
+        rankNum = int(card)/4+3
+
+        if rankNum == 10:
+            return "T"
+        elif rankNum == 11:
+            return "J"
+        elif rankNum == 12:
+            return "Q"
+        elif rankNum == 13:
+            return "K"
+        elif rankNum == 14:
+            return "A"
+        elif rankNum == 15:
+            return "2"
+        elif rankNum < 10:
+            return str(rankNum)
         else:
-            self.mode = "auto"
-        self.socks = []
-        self.strikes = 0
-        self.msgQueue = []
-        self.wcard = None
-        self.scard = None
-        self.active = False
-        self.swapping = False
+            return "_"
 
-        
-    def connect(self):
-                try:
-                        self.sock = socket(AF_INET, SOCK_STREAM)
-                        self.sock.connect((self.host,self.port))
-                        self.sock.settimeout(15)
-                        self.isConnected = True
-                        print ("Connected to ", self.sock.getpeername())
-                except error, (value,message):
-                #except error:
-                        if self.sock:
-                                self.sock.close()
-                        print ("Could not open socket: ", message)
-                        sys.exit()
+    def draw(self):
+        #draw background
+        self.screen.fill((0,150,0))
+        pygame.draw.line(self.screen, (0,0,0), (0, 320), (480, 320), 2)
+        pygame.draw.line(self.screen, (0,0,0), (480, 0), (480, 480), 2)
+        pygame.draw.line(self.screen, (0,0,0), (200, 320), (200, 480), 2)
 
-    def makeCplay(self):
 
-        handStr = ""
-        for card in self.hand:
-            handStr += card + ','
-        print "Your hand:", handStr
-        if self.manual == False:
-            #last play rank
-            lastRank = None
-            #last play quantity
-            lastPlayCards = []
+        #draw connection info
+        if self.client.isConnected:
+            connectText = self.font.render("Connected to {0} on port {1} as {2} in {3} mode.".format(str(self.client.host), str(self.client.port),self.client.name.strip(), self.client.mode), True, (0,0,0))
+            #draw lobby
+            lobbyText = self.font.render("Lobby (" + str(len(self.client.lobby)) + ")", True, (0,0,0))
+            self.screen.blit(lobbyText,(490,10))
             
-            for card in self.lastPlay:
-                if card != '52':
-                    lastPlayCards.append(card)
-                    if lastRank == None:
-                        lastRank = int(card)/4
-
-
-            if self.firstRound == 1:
-                cplay = '[cplay|00,52,52,52]'
-                self.hand.remove('00')           
-                return cplay
-
-            if lastRank is None:
-                theCard = self.hand.pop()
-                cplay = '[cplay|' + theCard + ",52,52,52]"
-                return cplay
-             
-            badRanks = []
-            thePlayCards = []
-            theRank = None
-            done = False
+            if self.client.lobby:
+                posCnt = 0
+                for player in self.client.lobby:
+                    playerText = self.font.render(player, True, (0,0,0))
+                    if posCnt > 21:
+                        self.screen.blit(playerText, (560,30+((posCnt-22)*20)))
+                    else:
+                        self.screen.blit(playerText, (500,30+(posCnt*20)))
+                    posCnt += 1
+                    #ypos += 20
             
-            while not done:
-                for card in self.hand:
-                    if theRank is None and int(card)/4 >= lastRank and int(card)/4 not in badRanks:
-                        theRank = int(card)/4
-
-                    if int(card)/4 == theRank:
-                        if card not in thePlayCards:
-                            thePlayCards.append(card)
-                    
-                    if len(thePlayCards) >= len(lastPlayCards):
-                        done = True
-                        break
-                    
-                    if card is self.hand[-1]:
-                        if theRank is None:
-                            done = True
-                            break
-                        else:    
-                            badRanks.append(int(card)/4)
-                            theRank = None
-                            thePlayCards = []
- 
-
-            for card in thePlayCards:
-                self.hand.remove(card)
-            
-            while len(thePlayCards) < 4:
-                thePlayCards.append('52')
-
-            
-            cplay = '[cplay|' + thePlayCards[0] + ',' + thePlayCards[1] + ',' + thePlayCards[2] + ',' + thePlayCards[3] + ']'
-
-            return cplay
-        
-        
-    
-    def getPlayer(self,name):
-        for player in self.table:
-            if player.name == name:
-                return player
-    
-    def updateLobby(self, msg):
-        self.lobby = []
-        msgNames = msg[10:-1]
-        names = msgNames.split(',')
-        
-        for name in names:
-            name = name[0:8]
-            self.lobby.append(name)
-    
-    def updateTable(self, msg):
-        #generate image of table
-        self.table = []
-        msg = msg[1:-1]
-        majorfields = msg.split('|')
-        tablePlayerStr = majorfields[1]
-        lastPlayStr = majorfields[2]
-        firstRoundStr = majorfields[3]
-        
-        playerfields = tablePlayerStr.split(',')
-        for playerStr in playerfields:
-            minorfields = playerStr.split(':')
-            nameStr = minorfields[1]
-            newPlayer = Player()
-            newPlayer.name = nameStr
-            newPlayer.status = minorfields[0][0]
-            newPlayer.strikes = minorfields[0][1]
-            newPlayer.numCards = minorfields[2]
-            if newPlayer.name == self.name:
-                self.player = newPlayer
-            self.table.append(newPlayer)
-        
-        lastPlayCardStrs = lastPlayStr.split(',')
-        self.lastPlay = []
-        for card in lastPlayCardStrs:
-            self.lastPlay.append(card)
-        
-        self.firstRound = int(firstRoundStr)
-            
-            
-            
-            
-        if self.player:
-            if self.player.status == 'a':
-                if self.manual:
-                    self.active = True
-                else:
-                    cplay = self.makeCplay()
-                    time.sleep(.1)
-                    self.sock.send(cplay)
-                    print "Sent:", cplay
-                    self.sock.send("[chand]")
+            if self.client.table:
                 
+                #Draw gameInProgress
+                gameInProgressText = self.font.render("Game currently in progress", True, (0,0,0))
                 
-    def updateHand(self, msg):
-        self.hand = []
-        msg = msg[1:-1]           
-        majorfields = msg.split('|')
-        handStr = majorfields[1]
-        
-        cardStrs = handStr.split(',')
-        
-        for card in cardStrs:
-            self.hand.append(card)
+                #draw table
+                tableDrawPositions = [(15,50), (125,50), (235,50), (345, 50), (15, 150), (125, 150), (235, 150)]
+                tableActiveMarker = self.font.render(">", True, (0,0,0))
+                posCnt = 0
 
-        self.hand.sort()
-        
-        
-            
-    def makeCswap(self):
-        wcard = self.hand.pop(0)
-        
-        cswap = '[cswap|' + wcard + ']'
-        
-        return cswap
-    
-    def makeCchat(self, msg):
-        cchat = '[cchat|'
-        
-        while len(msg) < 63:
-            msg += ' '
-        
-        cchat += msg + ']'
-        
-        return cchat
-    
-    def interpMsg(self, msg):
-        
-        msgRaw = msg
-        msgHeader = msg[1:6]
-        msgBody = msg[7:-1]
-        
-        
-        if msgHeader == 'slobb':
-            
-            
-            self.updateLobby(msg)
-        
-        elif msgHeader == 'stabl':
-            self.updateTable(msg)
-        
-        elif msgHeader == 'shand':
-            self.updateHand(msg)
-            
-        elif msgHeader == 'swapw':
-            print "Received card from scumbag", msgBody
+                for player in self.client.table:
+                    pos = tableDrawPositions[posCnt]
+                    if player.status != 'e':
+                        tablePlayerText = self.font.render(player.name, True, (0,0,0))
+                        tablePlayerNumCards = self.font.render("-cards: " + player.numCards, True, (0,0,0))
+                        tablePlayerStrikes = self.font.render("-strikes: " + player.strikes, True, (0,0,0))
+                        tablePlayerStatus = self.font.render("-status: " + player.status, True, (0,0,0))
+                        self.screen.blit(tablePlayerText, pos)
+                        self.screen.blit(tablePlayerNumCards, (pos[0]+15, pos[1] + 45))
+                        self.screen.blit(tablePlayerStrikes, (pos[0]+15, pos[1] + 30))
+                        self.screen.blit(tablePlayerStatus, (pos[0]+15, pos[1]+15))
+                        
+                        if player.status == "a":
+                            self.screen.blit(tableActiveMarker, (pos[0]-10, pos[1]))
+                        if player is self.client.player:
+                            tableYouMarker = self.font.render("<- You!", True, (255,0,0))
+                            self.screen.blit(tableYouMarker, (pos[0]+55, pos[1]))
+                        posCnt += 1
 
-            self.hand.append(msgBody)
+                #draw last play
+                cardDrawPositions = [(225,275), (285, 275),(345, 275), (405,275)]
+                if self.client.lastPlay:
+                    lastPlayText = self.font3.render("Last Play:", True, (0,0,0))
+                    self.screen.blit(lastPlayText, (100, 275))
+                    posCnt = 0
+                    for card in self.client.lastPlay:
+                        if card != '52':
+                            tableCardText = self.font3.render("{0}({1})".format(card,self.rank(card)), True, (0,0,0))
+                            self.screen.blit(tableCardText, cardDrawPositions[posCnt])
+                            posCnt += 1
 
-            if self.manual == False:
-                cswap = self.makeCswap()
-                time.sleep(.1)
-                self.sock.send(cswap)
-                print "Sent:", cswap
+                #draw hand
+                yourHandText = self.font.render("Your Hand:", True, (0,0,0))
+                self.screen.blit(yourHandText, (205, 325))
+                if self.client.hand:
+                    posCnt = 0
+                    for card in self.client.hand:
+                        handCardText = self.font.render("{0}({1})".format(card,self.rank(card)), True, (0,0,0))
+                        if posCnt < 7:
+                            self.screen.blit(handCardText, (270 + posCnt * 30, 325))
+                        elif posCnt < 14:
+                            self.screen.blit(handCardText, (270 + (posCnt-7) * 30, 345))
+                        else:
+                            self.screen.blit(handCardText, (270 + (posCnt-14)*30, 365))
+                        posCnt += 1
+
+
+                
             else:
-                self.swapping = True
-        
-        elif msgHeader == 'schat':
-            if len(self.chatLog) >= 7:
-                self.chatLog.pop(0)
-            self.chatLog.append(msgBody)
-            
-        elif msgHeader == 'swaps':
-            swapCards = msgBody.split('|')  
-            recvCard = swapCards[0]
-            giveCard = swapCards[1]
-            
-            print "Received card from warlord", recvCard
-            print "Gave card to warlord:", giveCard
+                gameInProgressText = self.font.render("Game not in progress.", True, (0,0,0))
 
-        
-        elif msgHeader == 'sjoin':
-            self.name = msgBody
-        
-        elif msgHeader == 'strik':
-            self.strikes += 1
-        
+            self.screen.blit(gameInProgressText, (5, 20))
         else:
-            print "Recieved unknown command"
-            sys.exit()
-            
-            
-    def input(self):
-        while 1:
-            read = raw_input("Input Message")
-            if read:
-                cchat = self.makeCchat(read)
-                time.sleep(.1)
-                self.sock.send(cchat)
-                
-    def close(self):
-        self.running = 0
-        self.sock.close()
+            connectText = self.font.render("Not connected.", True, (0,0,0))
+
         
+        self.screen.blit(connectText,(5,5))
+
+        if self.client.manual:
+            if self.client.active:
+                self.playTextBox.draw(self.screen)
+        #draw chatTextBox
+            elif self.client.swapping:
+                #draw swap box
+                self.swapTextBox.draw(self.screen)
+            else:
+                self.chatTextBox.draw(self.screen)
+            
+        
+
+        #draw chat
+        if self.client.chatLog:
+            ypos = 330
+            for chat in self.client.chatLog:
+                name = chat[0:8]
+                msg = chat[9:]
+                chatText = self.font.render(">{0}: {1}".format(name, msg), True, (0,0,0))
+                self.screen.blit(chatText, (5, ypos))
+                ypos += 16
+
+        pygame.display.update()
+
+##        #TESTING ONLY (Draw everything)
+##        #draw lobby
+##        lobbyText = self.font.render("Lobby (" + str(len(self.client.lobby)) + ")", True, (0,0,0))
+##        self.screen.blit(lobbyText,(490,10))
+##        
+##        playerText = self.font.render("johnnash", True, (0,0,0))
+##        for i in range(35):
+##            if i > 21:
+##                self.screen.blit(playerText, (560,30+((i-22)*20)))
+##            else:
+##                self.screen.blit(playerText, (500,30+(i*20)))
+##        #Draw gameInProgress
+##        gameInProgressText = self.font.render("Game currently in progress", True, (0,0,0))
+##        self.screen.blit(gameInProgressText, (5, 20))
+##        #draw table
+##        tableDrawPositions = [(15,50), (125,50), (235,50), (345, 50), (15, 150), (125, 150), (235, 150)]
+##        tableActiveMarker = self.font.render(">", True, (0,0,0))
+##        posCnt = 0
+##
+##        for pos in tableDrawPositions:
+##            #pos = tableDrawPositions[posCnt]
+##            tablePlayerText = self.font.render("johnnash", True, (0,0,0))
+##            tablePlayerNumCards = self.font.render("-Cards: 00", True, (0,0,0))
+##            tablePlayerStrikes = self.font.render("-Strikes: 0", True, (0,0,0))
+##            tablePlayerStatus = self.font.render("-Status: a", True, (0,0,0))
+##            self.screen.blit(tablePlayerText, pos)
+##            self.screen.blit(tablePlayerNumCards, (pos[0]+15, pos[1] + 45))
+##            self.screen.blit(tablePlayerStrikes, (pos[0]+15, pos[1] + 30))
+##            self.screen.blit(tablePlayerStatus, (pos[0]+15, pos[1]+15))
+##            
+##            #if player.status == "a":
+##            self.screen.blit(tableActiveMarker, (pos[0]-10, pos[1]))
+##            #if player is self.client.player:
+##            tableYouMarker = self.font.render("<- You!", True, (255,0,0))
+##            self.screen.blit(tableYouMarker, (pos[0]+55, pos[1]))
+##            #posCnt += 1
+##
+##
+##        cardDrawPositions = [(225,275), (275, 275),(325, 275), (375,275)]
+##        #if self.client.lastPlay:
+##            #posCnt = 0
+##        lastPlayText = self.font3.render("Last Play:", True, (0,0,0))
+##        self.screen.blit(lastPlayText, (100, 275))
+##        for pos in cardDrawPositions:
+##            tableCardText = self.font3.render("52", True, (0,0,0))
+##            self.screen.blit(tableCardText, pos)
+##            posCnt += 1
+##
+##        #draw hand
+##        yourHandText = self.font.render("Your Hand:", True, (0,0,0))
+##        self.screen.blit(yourHandText, (210, 325))
+##        #if self.client.hand:
+##        posCnt = 0
+##        for i in range(17):
+##            handCardText = self.font.render("22", True, (0,0,0))
+##            if posCnt < 8:
+##                self.screen.blit(handCardText, (275 + posCnt * 25, 325))
+##            elif posCnt < 16:
+##                self.screen.blit(handCardText, (275 + (posCnt-8) * 25, 345))
+##            else:
+##                self.screen.blit(handCardText, (275 + (posCnt-16)*25, 365))
+##            posCnt += 1
+##
+##        #draw text boxes
+##        self.playTextBox.draw(self.screen)
+##        self.swapTextBox.draw(self.screen)
+##        self.chatTextBox.draw(self.screen)
+##
+##        
+##                
+##        pygame.display.update()
+
     def run(self):
-        while len(self.name) != 8:
-            self.name += ' '
-
-        cjoin = '[cjoin|' + self.name + ']'
-        self.connect()
-        time.sleep(.1)
-        self.sock.send(cjoin)
-        self.socks = [self.sock]
         self.running = 1
+        self.clientThread = threading.Thread(target=self.client.run)
+        self.clientThread.start()
 
-        
         
         while self.running:
-            try:
-                read_socks, write_socks, error_socks = select.select(self.socks, [], [])
-                for sock in read_socks:
-                    if sock is self.sock:
-                        msg = self.sock.recv(self.bufsize)
-                        msgs = msg.split('][')
-                        for msg in msgs:
-                            if msg == '':
-                                break
-                            else:
-                                if msg[0] != '[':
-                                    msg = '['+msg
-                                if msg[-1] != ']':
-                                    msg += ']'
-                                print "Recv:", msg
-                                self.interpMsg(msg)               
-                
-                if self.strikes >= 3:
+            keystate = pygame.key.get_pressed()
+            events = pygame.event.get()
+            for event in events:
+                if event.type == QUIT or keystate[K_ESCAPE]:
+                    self.client.close()
                     self.running = 0
-            except:
-                self.running = 0
-                print "Client Closed"
+            self.draw()
+            self.clock.tick(100)
+            text = None
+            if self.client.manual:
+            #get text input
+                if self.client.active:
+                    text = self.playTextBox.update(events)
+                    if text:
+                        if text == "pass":
+                            cplay = "[cplay|52,52,52,52]"
+                        else:
+                            cards = text.split()
+##                            for card in cards:
+##                                if card in self.client.hand:
+##                                    self.client.hand.remove(card)
+                            while len(cards) < 4:
+                                cards.append('52')
+                            cplay = "[cplay|{0},{1},{2},{3}]".format(cards[0],cards[1],cards[2],cards[3])
+                        self.client.sock.send(cplay)
+                        #self.client.active = False
+                        self.client.sock.send("[chand]")
+                elif self.client.swapping:
+                    text = self.swapTextBox.update(events)
+                    if text:
+                        cswap = '[cswap|' + text + ']'
+                        self.client.sock.send(cswap)
+                        self.client.swapping = False
+                else:
+                    text = self.chatTextBox.update(events)
+                #if text is input
+                    if text:
+                        if self.client.isConnected:
+                            cchat = self.client.makeCchat(text)
+                            self.client.sock.send(cchat)
+            
+            
+        pygame.quit()
+        self.clientThread.join()
+        
 
 if __name__ == '__main__':
+
     parser = argparse.ArgumentParser(description='Get command line parameters.')
     parser.add_argument('-s', nargs='?', const='localhost', type=str, default='localhost')
     parser.add_argument('-p', nargs='?', const=36727, type=int, default=36727)
@@ -326,6 +485,5 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    theClient = Client(args.s, args.p, args.n, args.m)
+    theClient = Gui(args.s, args.p, args.n, args.m)
     theClient.run()
-                

@@ -1,22 +1,24 @@
-def convertToCard (num):
+def rank(card):
+    rankNum = int(card)/4+3
 
-    rank = int(num)/4 + 3
+    if rankNum == 10:
+        return "T"
+    elif rankNum == 11:
+        return "J"
+    elif rankNum == 12:
+        return "Q"
+    elif rankNum == 13:
+        return "K"
+    elif rankNum == 14:
+        return "A"
+    elif rankNum == 15:
+        return "2"
+    elif rankNum < 10:
+        return str(rankNum)
+    else:
+        return " "
 
-    suitNum = int(num)%4
 
-    if suitNum == 0:
-        suit = "C"
-    elif suitNum == 1:
-        suit = "D"
-    elif suitNum == 2:
-        suit = "H"
-    elif suitNum == 3:
-        suit = "S"
-    
-    return str(rank) + suit
+card = "52"
 
-
-print convertToCard("32")
-
-for i in range(7):
-    print i
+print "{0}({1})".format(card,rank(card))

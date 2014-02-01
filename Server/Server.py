@@ -1,6 +1,5 @@
 from Game import *
 from SMsgMaker import *
-from Player import *
 import time
 import select
 import socket
@@ -9,6 +8,26 @@ import threading
 import re
 import os
 import argparse
+
+class Player:
+    def __init__(self, sock=None, name='new'):
+        self.sock = sock #client connection socket object
+        self.name = name
+        self.status = 'w'
+        self.strikes = 0
+        self.hand = [] #array of card objects
+        self.rank = 0
+        self.atTable = False
+        self.isActive = False
+        self.numCards = '00' #client version
+        self.isWarlord = False
+        self.isScumbag = False
+        self.warlordSwap = False
+        self.lastPlay = []
+        
+
+    def fileno(self):
+        return self.sock.fileno()
 
 class Server:
         def __init__(self, playTimeout, minPlayers, lobbyTimeout):
@@ -285,9 +304,11 @@ class Server:
 
                         self.game.play(player, thePlay)
                         self.playTime = int(time.time())
-                        
-                        stabl = self.msgMaker.makeStabl()
-                        self.sendToAll(stabl)
+
+                        if self.game:
+                            if self.game.table:
+                                stabl = self.msgMaker.makeStabl()
+                                self.sendToAll(stabl)
                     else:
                         if player not in self.game.table:
                             self.strike(player, '31')
